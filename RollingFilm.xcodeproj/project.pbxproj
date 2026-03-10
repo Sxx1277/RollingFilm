@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		E6725D232F5FC43000B8F422 /* RollingFilm Watch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = E6725D032F5FC42F00B8F422 /* RollingFilm Watch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		E6725CB22F5FBE0100B8F422 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -21,12 +25,42 @@
 			remoteGlobalIDString = E6725CA12F5FBE0000B8F422;
 			remoteInfo = RollingFilm;
 		};
+		E6725D1A2F5FC43000B8F422 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E6725C9A2F5FBE0000B8F422 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E6725D022F5FC42F00B8F422;
+			remoteInfo = "RollingFilm Watch Watch App";
+		};
+		E6725D212F5FC43000B8F422 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E6725C9A2F5FBE0000B8F422 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E6725D022F5FC42F00B8F422;
+			remoteInfo = "RollingFilm Watch Watch App";
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		E6725CF82F5FC3E100B8F422 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				E6725D232F5FC43000B8F422 /* RollingFilm Watch Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		E6725CA22F5FBE0000B8F422 /* RollingFilm.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RollingFilm.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E6725CB12F5FBE0100B8F422 /* RollingFilmTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RollingFilmTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E6725CBB2F5FBE0100B8F422 /* RollingFilmUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RollingFilmUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E6725D032F5FC42F00B8F422 /* RollingFilm Watch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RollingFilm Watch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		E6725D192F5FC43000B8F422 /* RollingFilm Watch Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "RollingFilm Watch Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -43,6 +77,16 @@
 		E6725CBE2F5FBE0100B8F422 /* RollingFilmUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = RollingFilmUITests;
+			sourceTree = "<group>";
+		};
+		E6725D042F5FC42F00B8F422 /* RollingFilm Watch Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "RollingFilm Watch Watch App";
+			sourceTree = "<group>";
+		};
+		E6725D1C2F5FC43000B8F422 /* RollingFilm Watch Watch AppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "RollingFilm Watch Watch AppUITests";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -69,6 +113,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E6725D002F5FC42F00B8F422 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E6725D162F5FC43000B8F422 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -78,6 +136,8 @@
 				E6725CA42F5FBE0000B8F422 /* RollingFilm */,
 				E6725CB42F5FBE0100B8F422 /* RollingFilmTests */,
 				E6725CBE2F5FBE0100B8F422 /* RollingFilmUITests */,
+				E6725D042F5FC42F00B8F422 /* RollingFilm Watch Watch App */,
+				E6725D1C2F5FC43000B8F422 /* RollingFilm Watch Watch AppUITests */,
 				E6725CA32F5FBE0000B8F422 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -88,6 +148,8 @@
 				E6725CA22F5FBE0000B8F422 /* RollingFilm.app */,
 				E6725CB12F5FBE0100B8F422 /* RollingFilmTests.xctest */,
 				E6725CBB2F5FBE0100B8F422 /* RollingFilmUITests.xctest */,
+				E6725D032F5FC42F00B8F422 /* RollingFilm Watch Watch App.app */,
+				E6725D192F5FC43000B8F422 /* RollingFilm Watch Watch AppUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -102,10 +164,12 @@
 				E6725C9E2F5FBE0000B8F422 /* Sources */,
 				E6725C9F2F5FBE0000B8F422 /* Frameworks */,
 				E6725CA02F5FBE0000B8F422 /* Resources */,
+				E6725CF82F5FC3E100B8F422 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				E6725D222F5FC43000B8F422 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				E6725CA42F5FBE0000B8F422 /* RollingFilm */,
@@ -163,6 +227,51 @@
 			productReference = E6725CBB2F5FBE0100B8F422 /* RollingFilmUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		E6725D022F5FC42F00B8F422 /* RollingFilm Watch Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E6725D242F5FC43000B8F422 /* Build configuration list for PBXNativeTarget "RollingFilm Watch Watch App" */;
+			buildPhases = (
+				E6725CFF2F5FC42F00B8F422 /* Sources */,
+				E6725D002F5FC42F00B8F422 /* Frameworks */,
+				E6725D012F5FC42F00B8F422 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				E6725D042F5FC42F00B8F422 /* RollingFilm Watch Watch App */,
+			);
+			name = "RollingFilm Watch Watch App";
+			packageProductDependencies = (
+			);
+			productName = "RollingFilm Watch Watch App";
+			productReference = E6725D032F5FC42F00B8F422 /* RollingFilm Watch Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E6725D182F5FC43000B8F422 /* RollingFilm Watch Watch AppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E6725D2A2F5FC43000B8F422 /* Build configuration list for PBXNativeTarget "RollingFilm Watch Watch AppUITests" */;
+			buildPhases = (
+				E6725D152F5FC43000B8F422 /* Sources */,
+				E6725D162F5FC43000B8F422 /* Frameworks */,
+				E6725D172F5FC43000B8F422 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E6725D1B2F5FC43000B8F422 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				E6725D1C2F5FC43000B8F422 /* RollingFilm Watch Watch AppUITests */,
+			);
+			name = "RollingFilm Watch Watch AppUITests";
+			packageProductDependencies = (
+			);
+			productName = "RollingFilm Watch Watch AppUITests";
+			productReference = E6725D192F5FC43000B8F422 /* RollingFilm Watch Watch AppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -184,6 +293,13 @@
 						CreatedOnToolsVersion = 26.3;
 						TestTargetID = E6725CA12F5FBE0000B8F422;
 					};
+					E6725D022F5FC42F00B8F422 = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					E6725D182F5FC43000B8F422 = {
+						CreatedOnToolsVersion = 26.3;
+						TestTargetID = E6725D022F5FC42F00B8F422;
+					};
 				};
 			};
 			buildConfigurationList = E6725C9D2F5FBE0000B8F422 /* Build configuration list for PBXProject "RollingFilm" */;
@@ -203,6 +319,8 @@
 				E6725CA12F5FBE0000B8F422 /* RollingFilm */,
 				E6725CB02F5FBE0100B8F422 /* RollingFilmTests */,
 				E6725CBA2F5FBE0100B8F422 /* RollingFilmUITests */,
+				E6725D022F5FC42F00B8F422 /* RollingFilm Watch Watch App */,
+				E6725D182F5FC43000B8F422 /* RollingFilm Watch Watch AppUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -223,6 +341,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		E6725CB92F5FBE0100B8F422 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E6725D012F5FC42F00B8F422 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E6725D172F5FC43000B8F422 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -253,6 +385,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E6725CFF2F5FC42F00B8F422 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E6725D152F5FC43000B8F422 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -265,6 +411,16 @@
 			isa = PBXTargetDependency;
 			target = E6725CA12F5FBE0000B8F422 /* RollingFilm */;
 			targetProxy = E6725CBC2F5FBE0100B8F422 /* PBXContainerItemProxy */;
+		};
+		E6725D1B2F5FC43000B8F422 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E6725D022F5FC42F00B8F422 /* RollingFilm Watch Watch App */;
+			targetProxy = E6725D1A2F5FC43000B8F422 /* PBXContainerItemProxy */;
+		};
+		E6725D222F5FC43000B8F422 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E6725D022F5FC42F00B8F422 /* RollingFilm Watch Watch App */;
+			targetProxy = E6725D212F5FC43000B8F422 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -575,6 +731,118 @@
 			};
 			name = Release;
 		};
+		E6725D252F5FC43000B8F422 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FV5P3L46WP;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "RollingFilm Watch";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.fool.RollingFilm;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fool.RollingFilm.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Debug;
+		};
+		E6725D262F5FC43000B8F422 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FV5P3L46WP;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "RollingFilm Watch";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.fool.RollingFilm;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fool.RollingFilm.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Release;
+		};
+		E6725D2B2F5FC43000B8F422 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FV5P3L46WP;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.fool.RollingFilm-Watch-Watch-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "RollingFilm Watch Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Debug;
+		};
+		E6725D2C2F5FC43000B8F422 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FV5P3L46WP;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.fool.RollingFilm-Watch-Watch-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "RollingFilm Watch Watch App";
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -610,6 +878,24 @@
 			buildConfigurations = (
 				E6725CCC2F5FBE0100B8F422 /* Debug */,
 				E6725CCD2F5FBE0100B8F422 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E6725D242F5FC43000B8F422 /* Build configuration list for PBXNativeTarget "RollingFilm Watch Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E6725D252F5FC43000B8F422 /* Debug */,
+				E6725D262F5FC43000B8F422 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E6725D2A2F5FC43000B8F422 /* Build configuration list for PBXNativeTarget "RollingFilm Watch Watch AppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E6725D2B2F5FC43000B8F422 /* Debug */,
+				E6725D2C2F5FC43000B8F422 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
