@@ -89,8 +89,31 @@ final class SessionDelegator: NSObject, ObservableObject {
         DispatchQueue.main.async {
             self.isSyncing = false
             guard success else { return }
+            if let rollUUID {
+                self.persistActiveRoll(rollUUID: rollUUID)
+            }
             self.lastSyncedRollUUID = rollUUID
             self.syncSuccessToken += 1
+        }
+    }
+
+    /// 配对状态持久化：全量置 false，再将当前卷置 true。
+    private func persistActiveRoll(rollUUID: String) {
+        guard let container = modelContainer else { return }
+        let context = ModelContext(container)
+        let descriptor = FetchDescriptor<FilmRoll>()
+        guard let allRolls = try? context.fetch(descriptor) else { return }
+
+        var didChange = false
+        for item in allRolls {
+            let shouldActive = (item.rollUUID == rollUUID)
+            if item.isActive != shouldActive {
+                item.isActive = shouldActive
+                didChange = true
+            }
+        }
+        if didChange {
+            try? context.save()
         }
     }
 

@@ -48,9 +48,28 @@ struct RollingFilmApp: App {
         guard let rolls = try? context.fetch(descriptor), !rolls.isEmpty else { return }
 
         var didUpdate = false
+        let activeRolls = rolls.filter { $0.isActive }
+        let keepActiveUUID = activeRolls
+            .sorted { $0.createdAt > $1.createdAt }
+            .first?
+            .rollUUID
+
         for roll in rolls {
             if roll.rollUUID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 roll.rollUUID = UUID().uuidString
+                didUpdate = true
+            }
+            if roll.filmType.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                roll.filmType = roll.name
+                didUpdate = true
+            }
+            if roll.createdAt.timeIntervalSince1970 <= 0 {
+                roll.createdAt = roll.loadDate
+                didUpdate = true
+            }
+            let shouldBeActive = (roll.rollUUID == keepActiveUUID)
+            if roll.isActive != shouldBeActive {
+                roll.isActive = shouldBeActive
                 didUpdate = true
             }
         }

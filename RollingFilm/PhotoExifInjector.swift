@@ -89,6 +89,7 @@ enum PhotoExifInjector {
         roll: FilmRoll,
         saveMode: SaveMode = .saveAsCopy,
         orderMode: BatchOrderMode = .byCaptureTime,
+        onEachResult: ((PHAsset, FilmFrame, Bool) -> Void)? = nil,
         completion: @escaping (BatchInjectSummary) -> Void
     ) {
         let pairs = pairAssetsAndFramesSequentially(assets: assets, frames: frames, orderMode: orderMode)
@@ -104,6 +105,7 @@ enum PhotoExifInjector {
         for (asset, frame) in pairs {
             group.enter()
             inject(frame: frame, roll: roll, into: asset, saveMode: saveMode) { ok in
+                onEachResult?(asset, frame, ok)
                 if ok { success += 1 } else { fail += 1 }
                 group.leave()
             }
@@ -130,7 +132,7 @@ enum PhotoExifInjector {
         completion: @escaping (BatchInjectSummary) -> Void
     ) {
         let tempRoll = FilmRoll(name: "", iso: rollISO, cameraModel: "", lensModel: "")
-        injectBatch(assets: assets, frames: frames, roll: tempRoll, saveMode: .saveAsCopy, orderMode: .byCaptureTime, completion: completion)
+        injectBatch(assets: assets, frames: frames, roll: tempRoll, saveMode: .saveAsCopy, orderMode: .byCaptureTime, onEachResult: nil, completion: completion)
     }
 
     /// 批量顺序注入：按时间排序后一一对应（或按传入顺序一一对应）

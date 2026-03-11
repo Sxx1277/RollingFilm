@@ -11,6 +11,9 @@ import SwiftData
 @Model
 final class FilmRoll {
     var rollUUID: String = UUID().uuidString
+    var filmType: String = ""
+    var createdAt: Date = Date()
+    var isActive: Bool = false
     var name: String
     var iso: Int
     var cameraModel: String = ""
@@ -24,6 +27,9 @@ final class FilmRoll {
 
     init(
         rollUUID: String = UUID().uuidString,
+        filmType: String = "",
+        createdAt: Date = Date(),
+        isActive: Bool = false,
         name: String,
         iso: Int,
         cameraModel: String = "",
@@ -33,6 +39,9 @@ final class FilmRoll {
         isFinished: Bool = false
     ) {
         self.rollUUID = rollUUID
+        self.filmType = filmType.isEmpty ? name : filmType
+        self.createdAt = createdAt
+        self.isActive = isActive
         self.name = name
         self.iso = iso
         self.cameraModel = cameraModel
@@ -50,6 +59,7 @@ final class FilmFrame {
     var shutter: String
     var latitude: Double?
     var longitude: Double?
+    var photoIdentifier: String?
 
     var roll: FilmRoll?
 
@@ -58,12 +68,14 @@ final class FilmFrame {
         aperture: String = "",
         shutter: String = "",
         latitude: Double? = nil,
-        longitude: Double? = nil
+        longitude: Double? = nil,
+        photoIdentifier: String? = nil
     ) {
         self.timestamp = timestamp
         self.aperture = aperture
         self.shutter = shutter
         self.latitude = latitude
         self.longitude = longitude
+        self.photoIdentifier = photoIdentifier
     }
 }

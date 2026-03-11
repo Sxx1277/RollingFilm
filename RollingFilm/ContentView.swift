@@ -27,28 +27,60 @@ private enum RFTheme {
     static let accentAlt = Color.cyan
 }
 
-struct ContentView: View {
-    @StateObject private var session = SessionDelegator.shared
-    @Environment(\.modelContext) private var modelContext
-    @Query(sort: \FilmRoll.loadDate, order: .reverse) private var rolls: [FilmRoll]
-    @State private var showingNewRoll = false
-
-    private var recentRolls: [FilmRoll] {
-        Array(rolls.prefix(5))
+private enum I18N {
+    private static var isChinese: Bool {
+        Locale.preferredLanguages.first?.hasPrefix("zh") == true
     }
 
-    private var archiveGroups: [(filmType: String, rolls: [FilmRoll])] {
-        let activeUUID = session.lastSyncedRollUUID
-        let nonActive = rolls.filter { $0.rollUUID != activeUUID }
-        let grouped = Dictionary(grouping: nonActive, by: { $0.name })
-        return grouped
-            .map { (filmType: $0.key, rolls: $0.value.sorted { $0.loadDate > $1.loadDate }) }
-            .sorted { lhs, rhs in
-                if lhs.rolls.count == rhs.rolls.count {
-                    return lhs.filmType < rhs.filmType
-                }
-                return lhs.rolls.count > rhs.rolls.count
-            }
+    static func t(_ zh: String, _ en: String) -> String {
+        isChinese ? zh : en
+    }
+}
+
+struct ContentView: View {
+    private struct ArchiveGroup: Identifiable {
+        var id: String { filmType }
+        let filmType: String
+        let rolls: [FilmRoll]
+    }
+
+    @StateObject private var session = SessionDelegator.shared
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \FilmRoll.createdAt, order: .reverse) private var rolls: [FilmRoll]
+    @State private var showingNewRoll = false
+
+    private var activeRollUUID: String? {
+        rolls
+            .filter { $0.isActive && !$0.rollUUID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .sorted { $0.createdAt > $1.createdAt }
+            .first?
+            .rollUUID
+    }
+
+    private var activeRolls: [FilmRoll] {
+        rolls
+            .filter { !$0.isFinished }
+            .sorted { $0.loadDate > $1.loadDate }
+    }
+
+    private var pendingRolls: [FilmRoll] {
+        rolls
+            .filter { $0.isFinished && missingPhotoCount(for: $0) > 0 }
+            .sorted { $0.createdAt > $1.createdAt }
+    }
+
+    private var sortedGroupedRolls: [ArchiveGroup] {
+        let libraryRolls = rolls.filter { $0.isFinished && missingPhotoCount(for: $0) == 0 }
+        let grouped = Dictionary(grouping: libraryRolls, by: { normalizedFilmType(for: $0) })
+        let sortedKeys = grouped.keys.sorted()
+        return sortedKeys.compactMap { key in
+            guard let groupedRolls = grouped[key] else { return nil }
+            let sortedRolls = groupedRolls.sorted { $0.loadDate > $1.loadDate }
+            return ArchiveGroup(
+                filmType: key,
+                rolls: sortedRolls
+            )
+        }
     }
 
     var body: some View {
@@ -73,22 +105,20 @@ struct ContentView: View {
                         .listRowBackground(Color.clear)
                     }
                 } else {
-                    Section("最近装卷") {
+                    Section("Active Rolls") {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
-                                ForEach(recentRolls) { roll in
+                                ForEach(activeRolls) { roll in
                                     NavigationLink {
                                         RollDetailView(roll: roll)
                                     } label: {
-                                        RecentRollCard(
+                                        ActiveRollCard(
                                             roll: roll,
-                                            isActive: session.lastSyncedRollUUID == roll.rollUUID
+                                            isActive: roll.rollUUID == activeRollUUID,
+                                            onSync: { session.sendCurrentRoll(roll: roll) }
                                         )
                                     }
                                     .buttonStyle(.plain)
-                                    .simultaneousGesture(TapGesture().onEnded {
-                                        session.sendCurrentRoll(roll: roll)
-                                    })
                                 }
                             }
                             .padding(.vertical, 4)
@@ -97,12 +127,36 @@ struct ContentView: View {
                         .listRowBackground(Color.clear)
                     }
 
-                    Section("胶卷文件夹") {
-                        ForEach(archiveGroups, id: \.filmType) { group in
+                    Section("Ready to Match") {
+                        if pendingRolls.isEmpty {
+                            Text("所有已拍完胶卷都已完成匹配。")
+                                .font(.subheadline)
+                                .foregroundStyle(RFTheme.secondaryText)
+                                .listRowBackground(Color.clear)
+                        } else {
+                            ForEach(Array(pendingRolls.prefix(3))) { roll in
+                                NavigationLink {
+                                    RollDetailView(roll: roll)
+                                } label: {
+                                    PendingRollRow(
+                                        roll: roll,
+                                        missingCount: missingPhotoCount(for: roll)
+                                    )
+                                }
+                                .listRowBackground(Color.clear)
+                            }
+                        }
+                    }
+
+                    Section("Film Library") {
+                        ForEach(sortedGroupedRolls) { group in
                             NavigationLink {
                                 FilmTypeArchiveView(filmType: group.filmType)
                             } label: {
-                                ArchiveFolderRow(filmType: group.filmType, count: group.rolls.count)
+                                ArchiveFolderRow(
+                                    filmType: group.filmType,
+                                    count: group.rolls.count
+                                )
                             }
                             .swipeActions(edge: .trailing) {
                                 Button(role: .destructive) {
@@ -127,9 +181,9 @@ struct ContentView: View {
             .listStyle(.grouped)
 #if os(iOS)
             .scrollContentBackground(.hidden)
-            .background(RFTheme.pageBackground.ignoresSafeArea())
+            .background(Color.black.ignoresSafeArea())
 #endif
-            .navigationTitle("Film")
+            .navigationTitle("RollingFilm")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
@@ -143,12 +197,19 @@ struct ContentView: View {
             .sheet(isPresented: $showingNewRoll) {
                 NewRollSheet()
             }
-            .onAppear {
-                if let mostRecent = rolls.first {
-                    session.sendCurrentRoll(roll: mostRecent)
-                }
-            }
         }
+    }
+
+    private func normalizedFilmType(for roll: FilmRoll) -> String {
+        let t = roll.filmType.trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.isEmpty ? roll.name : t
+    }
+
+    private func missingPhotoCount(for roll: FilmRoll) -> Int {
+        roll.frames.filter { frame in
+            let id = frame.photoIdentifier?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return id.isEmpty
+        }.count
     }
 
     private func delete(rolls: [FilmRoll]) {
@@ -168,18 +229,24 @@ struct ContentView: View {
     }
 }
 
-struct RecentRollCard: View {
+struct ActiveRollCard: View {
     let roll: FilmRoll
     let isActive: Bool
+    let onSync: () -> Void
+
+    private var progress: Double {
+        guard roll.totalFrames > 0 else { return 0 }
+        return min(1.0, Double(roll.frames.count) / Double(roll.totalFrames))
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Circle()
-                    .fill(isActive ? Color.green : Color.gray.opacity(0.45))
+                    .fill(isActive ? Color.green : Color.secondary)
                     .frame(width: 8, height: 8)
                 Spacer()
-                Text(roll.loadDate, format: .dateTime.year().month().day())
+                Text(roll.loadDate, format: .dateTime.year().month(.twoDigits).day(.twoDigits))
                     .font(.caption2)
                     .foregroundStyle(RFTheme.secondaryText)
             }
@@ -195,6 +262,19 @@ struct RecentRollCard: View {
                     .font(.subheadline.monospacedDigit())
                     .foregroundStyle(RFTheme.accentAlt)
             }
+            ProgressView(value: progress)
+                .tint(RFTheme.accent)
+                .progressViewStyle(.linear)
+            Button {
+                onSync()
+            } label: {
+                Label("Connect", systemImage: "applewatch")
+                    .font(.caption.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+            }
+            .buttonStyle(.bordered)
+            .tint(.green)
             if roll.isFinished {
                 Text("已拍完")
                     .font(.caption)
@@ -202,15 +282,48 @@ struct RecentRollCard: View {
             }
         }
         .padding(12)
-        .frame(width: 210, alignment: .leading)
+        .frame(width: 230, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(RFTheme.cardBackground)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                .stroke(Color.gray.opacity(0.3), lineWidth: 0.5)
         )
+    }
+}
+
+struct PendingRollRow: View {
+    let roll: FilmRoll
+    let missingCount: Int
+
+    var body: some View {
+        HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                .foregroundStyle(RFTheme.secondaryText.opacity(0.9))
+                .frame(width: 44, height: 44)
+                .overlay(
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .font(.caption)
+                        .foregroundStyle(RFTheme.secondaryText)
+                )
+            VStack(alignment: .leading, spacing: 4) {
+                Text(roll.name)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RFTheme.primaryText)
+                    .lineLimit(1)
+                Text(roll.loadDate, format: .dateTime.year().month(.twoDigits).day(.twoDigits))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(RFTheme.secondaryText)
+                Text("待匹配 \(missingCount) 张")
+                    .font(.caption)
+                    .foregroundStyle(RFTheme.accent)
+            }
+            Spacer()
+        }
+        .padding(.vertical, 4)
     }
 }
 
@@ -222,15 +335,12 @@ struct ArchiveFolderRow: View {
         HStack(spacing: 12) {
             Image(systemName: "tray.full.fill")
                 .font(.title3)
-                .foregroundStyle(RFTheme.accent)
+                .foregroundStyle(RFTheme.primaryText)
             VStack(alignment: .leading, spacing: 2) {
-                Text(filmType)
+                Text("\(filmType) (\(count))")
                     .font(.headline)
                     .foregroundStyle(RFTheme.primaryText)
                     .lineLimit(1)
-                Text("\(count) 卷")
-                    .font(.subheadline.monospacedDigit())
-                    .foregroundStyle(RFTheme.secondaryText)
             }
             Spacer()
         }
@@ -240,61 +350,199 @@ struct ArchiveFolderRow: View {
 
 struct FilmTypeArchiveView: View {
     let filmType: String
-    @Environment(\.modelContext) private var modelContext
-    @Query(sort: \FilmRoll.loadDate, order: .reverse) private var allRolls: [FilmRoll]
+    @Query(sort: \FilmRoll.createdAt, order: .reverse) private var allRolls: [FilmRoll]
+    @State private var selectedRoll: FilmRoll?
+    @State private var pressedRollID: PersistentIdentifier?
 
     private var rolls: [FilmRoll] {
-        allRolls.filter { $0.name == filmType }
+        allRolls
+            .filter {
+                let type = $0.filmType.trimmingCharacters(in: .whitespacesAndNewlines)
+                return (type.isEmpty ? $0.name : type) == filmType
+            }
+            .sorted { $0.createdAt > $1.createdAt }
     }
 
     var body: some View {
-        List {
-            ForEach(rolls) { roll in
-                NavigationLink {
-                    RollDetailView(roll: roll)
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("装卷 \(roll.loadDate, format: .dateTime.year().month().day())")
-                                .font(.subheadline)
-                                .foregroundStyle(RFTheme.primaryText)
-                            HStack(spacing: 10) {
-                                Text("ISO \(roll.iso)")
-                                    .font(.caption.monospacedDigit())
-                                    .foregroundStyle(RFTheme.accent)
-                                Text("\(roll.frames.count)/\(roll.totalFrames)")
-                                    .font(.caption.monospacedDigit())
-                                    .foregroundStyle(RFTheme.accentAlt)
+        ScrollView {
+            LazyVStack(spacing: 14) {
+                ForEach(rolls) { roll in
+                    Button {
+                        withAnimation(.easeOut(duration: 0.12)) {
+                            pressedRollID = roll.persistentModelID
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                            selectedRoll = roll
+                            withAnimation(.easeIn(duration: 0.18)) {
+                                pressedRollID = nil
                             }
                         }
-                        Spacer()
-                    }
-                    .padding(.vertical, 6)
-                }
-                .swipeActions(edge: .trailing) {
-                    Button(role: .destructive) {
-                        modelContext.delete(roll)
                     } label: {
-                        Label("删除", systemImage: "trash")
+                        FilmSheetCard(roll: roll)
+                            .scaleEffect(pressedRollID == roll.persistentModelID ? 1.03 : 1.0)
+                            .animation(.spring(response: 0.25, dampingFraction: 0.82), value: pressedRollID)
                     }
+                    .buttonStyle(.plain)
                 }
-                .swipeActions(edge: .leading) {
-                    Button {
-                        roll.isFinished = true
-                    } label: {
-                        Label("归档", systemImage: "archivebox")
-                    }
-                    .tint(.indigo)
-                }
-                .listRowBackground(Color.clear)
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
         }
-        .listStyle(.grouped)
 #if os(iOS)
-        .scrollContentBackground(.hidden)
         .background(RFTheme.pageBackground.ignoresSafeArea())
 #endif
+        .overlay(GrainOverlay().allowsHitTesting(false))
+        .navigationDestination(item: $selectedRoll) { roll in
+            RollDetailView(roll: roll)
+        }
         .navigationTitle(filmType)
+    }
+}
+
+struct FilmSheetCard: View {
+    let roll: FilmRoll
+
+    private var firstPreviewIdentifier: String? {
+        roll.frames
+            .sorted { $0.timestamp < $1.timestamp }
+            .compactMap(\.photoIdentifier)
+            .first(where: { !$0.isEmpty })
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            FilmSheetPreview(identifier: firstPreviewIdentifier)
+                .frame(width: 92, height: 92)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(roll.loadDate, format: .dateTime.year().month(.twoDigits).day(.twoDigits))
+                    .font(.system(.headline, design: .monospaced))
+                    .foregroundStyle(RFTheme.secondaryText)
+                Text(roll.cameraModel.isEmpty ? "Unknown Camera" : roll.cameraModel)
+                    .font(.system(.subheadline, design: .monospaced))
+                    .foregroundStyle(RFTheme.secondaryText)
+                    .lineLimit(1)
+                Text("\(roll.frames.count)/\(roll.totalFrames) EXP")
+                    .font(.system(.body, design: .monospaced).weight(.semibold))
+                    .foregroundStyle(RFTheme.accent)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 18)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(white: 0.12))
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        }
+        .overlay(alignment: .top) {
+            FilmPerforationStrip()
+                .padding(.top, 4)
+        }
+        .overlay(alignment: .bottom) {
+            FilmPerforationStrip()
+                .padding(.bottom, 4)
+        }
+    }
+}
+
+struct FilmSheetPreview: View {
+    let identifier: String?
+#if os(iOS)
+    @State private var thumbnail: UIImage?
+#endif
+
+    var body: some View {
+#if os(iOS)
+        ZStack {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white.opacity(0.95))
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.black.opacity(0.7))
+                .padding(2)
+            if let thumbnail {
+                Image(uiImage: thumbnail)
+                    .resizable()
+                    .scaledToFill()
+                    .padding(2)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            } else {
+                placeholder
+                    .padding(2)
+            }
+        }
+        .onAppear { loadThumbnailIfNeeded() }
+        .onChange(of: identifier) { loadThumbnailIfNeeded() }
+#else
+        placeholder
+#endif
+    }
+
+    private var placeholder: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "film")
+                .font(.title2)
+                .foregroundStyle(RFTheme.secondaryText)
+            Text("35mm")
+                .font(.system(.caption, design: .monospaced))
+                .foregroundStyle(RFTheme.secondaryText)
+        }
+    }
+
+#if os(iOS)
+    private func loadThumbnailIfNeeded() {
+        guard let identifier, !identifier.isEmpty else {
+            thumbnail = nil
+            return
+        }
+        let result = PHAsset.fetchAssets(withLocalIdentifiers: [identifier], options: nil)
+        guard let asset = result.firstObject else {
+            thumbnail = nil
+            return
+        }
+        let options = PHImageRequestOptions()
+        options.deliveryMode = .highQualityFormat
+        options.resizeMode = .fast
+        PHImageManager.default().requestImage(
+            for: asset,
+            targetSize: CGSize(width: 220, height: 220),
+            contentMode: .aspectFill,
+            options: options
+        ) { image, _ in
+            thumbnail = image
+        }
+    }
+#endif
+}
+
+struct FilmPerforationStrip: View {
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(0..<12, id: \.self) { _ in
+                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                    .fill(Color.white.opacity(0.18))
+                    .frame(width: 6, height: 3)
+            }
+        }
+    }
+}
+
+struct GrainOverlay: View {
+    var body: some View {
+        Canvas { context, size in
+            for _ in 0..<420 {
+                let x = CGFloat.random(in: 0...size.width)
+                let y = CGFloat.random(in: 0...size.height)
+                let rect = CGRect(x: x, y: y, width: 1.2, height: 1.2)
+                context.fill(Path(rect), with: .color(.white.opacity(0.03)))
+            }
+        }
+        .blendMode(.overlay)
+        .opacity(0.45)
     }
 }
 
@@ -307,11 +555,8 @@ struct RollDetailView: View {
 #if os(iOS)
     @State private var showingPhotoPicker = false
     @State private var showingSaveModeDialog = false
-    @State private var photoPickerLimit = 1
-    @State private var pendingBatchInject = false
     @State private var selectedSaveMode: PhotoExifInjector.SaveMode = .saveAsCopy
     @State private var selectedFrameForInject: FilmFrame?
-    @State private var matchedThumbnails: [PersistentIdentifier: UIImage] = [:]
     @State private var feedbackMessage = ""
     @State private var showingFeedbackAlert = false
 #endif
@@ -328,12 +573,8 @@ struct RollDetailView: View {
             }
 #if os(iOS)
             .sheet(isPresented: $showingPhotoPicker) {
-                PhotoAssetPickerView(selectionLimit: photoPickerLimit) { assets in
-                    if photoPickerLimit == 1 {
-                        handleManualInject(assets: assets)
-                    } else {
-                        handleBatchInject(assets: assets)
-                    }
+                PhotoAssetPickerView(selectionLimit: 1) { assets in
+                    handleManualInject(assets: assets)
                 }
             }
             .confirmationDialog("保存方式", isPresented: $showingSaveModeDialog, titleVisibility: .visible) {
@@ -401,7 +642,6 @@ struct RollDetailView: View {
 #if os(iOS)
         FrameRowView(
             frame: frame,
-            matchedThumbnail: matchedThumbnails[frame.persistentModelID],
             onInjectPhoto: { startSingleInject(for: frame) }
         )
 #else
@@ -420,22 +660,6 @@ struct RollDetailView: View {
                     .padding(.vertical, 14)
             }
             .buttonStyle(MechanicalActionButtonStyle(fill: RFTheme.cardBackground, foreground: RFTheme.primaryText))
-
-#if os(iOS)
-            Button {
-                startBatchInject()
-            } label: {
-                Image(systemName: "square.stack.3d.up.fill")
-                    .font(.title3.weight(.semibold))
-                    .frame(width: 52, height: 52)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(Color.orange.opacity(0.92))
-                    )
-                    .foregroundStyle(.black)
-            }
-                .buttonStyle(MechanicalFABStyle())
-#endif
         }
         .padding(.horizontal)
         .padding(.bottom, 8)
@@ -464,17 +688,18 @@ struct RollDetailView: View {
     }
 
     private var dashboardCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        let isFinished = roll.isFinished
+        return VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
                 Text(roll.name)
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(RFTheme.primaryText)
+                    .foregroundStyle(isFinished ? RFTheme.primaryText.opacity(0.72) : RFTheme.primaryText)
                     .lineLimit(1)
                 Spacer()
                 Text("ISO \(roll.iso)")
                     .font(.system(size: 34, weight: .bold, design: .rounded))
                     .monospacedDigit()
-                    .foregroundStyle(RFTheme.accent)
+                    .foregroundStyle(isFinished ? RFTheme.accent.opacity(0.75) : RFTheme.accent)
             }
 
             HStack(spacing: 10) {
@@ -485,16 +710,16 @@ struct RollDetailView: View {
                     .font(.footnote)
                     .lineLimit(1)
             }
-            .foregroundStyle(RFTheme.secondaryText)
+            .foregroundStyle(isFinished ? RFTheme.secondaryText.opacity(0.8) : RFTheme.secondaryText)
 
             HStack {
                 Text(roll.loadDate, format: .dateTime.day().month().year())
                     .font(.caption)
-                    .foregroundStyle(RFTheme.secondaryText)
+                    .foregroundStyle(isFinished ? RFTheme.secondaryText.opacity(0.8) : RFTheme.secondaryText)
                 Spacer()
                 Text("\(roll.frames.count)/\(roll.totalFrames)")
                     .font(.caption.monospacedDigit())
-                    .foregroundStyle(RFTheme.accent)
+                    .foregroundStyle(isFinished ? RFTheme.accent.opacity(0.75) : RFTheme.accent)
                 Toggle("", isOn: $roll.isFinished)
                     .labelsHidden()
                     .tint(RFTheme.accent)
@@ -504,7 +729,7 @@ struct RollDetailView: View {
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(RFTheme.cardBackground)
+                .fill(isFinished ? Color(white: 0.20) : RFTheme.cardBackground)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -524,15 +749,6 @@ struct RollDetailView: View {
 #if os(iOS)
     private func startSingleInject(for frame: FilmFrame) {
         selectedFrameForInject = frame
-        pendingBatchInject = false
-        photoPickerLimit = 1
-        showingSaveModeDialog = true
-    }
-
-    private func startBatchInject() {
-        selectedFrameForInject = nil
-        pendingBatchInject = true
-        photoPickerLimit = 0
         showingSaveModeDialog = true
     }
 
@@ -541,53 +757,11 @@ struct RollDetailView: View {
         guard let asset = assets.first else { return }
         PhotoExifInjector.inject(frame: frame, roll: roll, into: asset, saveMode: selectedSaveMode) { success in
             if success {
-                cacheThumbnail(for: frame, from: asset)
+                frame.photoIdentifier = asset.localIdentifier
+                try? modelContext.save()
             }
             feedbackMessage = success ? "注入成功" : "注入失败，请检查相册权限或图片格式"
             showingFeedbackAlert = true
-        }
-    }
-
-    private func handleBatchInject(assets: [PHAsset]) {
-        guard !assets.isEmpty else { return }
-        guard pendingBatchInject else { return }
-        let framesAsc = roll.frames.sorted { $0.timestamp < $1.timestamp }
-        PhotoExifInjector.injectBatch(
-            assets: assets,
-            frames: framesAsc,
-            roll: roll,
-            saveMode: selectedSaveMode,
-            orderMode: .byCaptureTime
-        ) { summary in
-            if summary.successCount > 0 {
-                let pairs = PhotoExifInjector.pairAssetsAndFramesSequentially(
-                    assets: assets,
-                    frames: framesAsc,
-                    orderMode: .byCaptureTime
-                )
-                for (asset, frame) in pairs {
-                    cacheThumbnail(for: frame, from: asset)
-                }
-            }
-            feedbackMessage =
-                "共选中\(summary.totalAssets)张，匹配\(summary.matchedPairs)张，成功\(summary.successCount)张，失败\(summary.failureCount)张。"
-            showingFeedbackAlert = true
-        }
-    }
-
-    private func cacheThumbnail(for frame: FilmFrame, from asset: PHAsset) {
-        let options = PHImageRequestOptions()
-        options.deliveryMode = .highQualityFormat
-        options.resizeMode = .fast
-        options.isSynchronous = false
-        PHImageManager.default().requestImage(
-            for: asset,
-            targetSize: CGSize(width: 64, height: 64),
-            contentMode: .aspectFill,
-            options: options
-        ) { image, _ in
-            guard let image else { return }
-            matchedThumbnails[frame.persistentModelID] = image
         }
     }
 #endif
@@ -597,7 +771,7 @@ struct RollDetailView: View {
 struct FrameRowView: View {
     let frame: FilmFrame
 #if os(iOS)
-    var matchedThumbnail: UIImage? = nil
+    @State private var loadedThumbnail: UIImage?
 #endif
     var onInjectPhoto: (() -> Void)? = nil
 
@@ -609,12 +783,20 @@ struct FrameRowView: View {
                     .foregroundStyle(RFTheme.secondaryText)
                 Spacer()
 #if os(iOS)
-                if let matchedThumbnail {
-                    Image(uiImage: matchedThumbnail)
+                if let loadedThumbnail {
+                    Image(uiImage: loadedThumbnail)
                         .resizable()
                         .scaledToFill()
                         .frame(width: 28, height: 28)
                         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                } else if let id = frame.photoIdentifier, !id.isEmpty {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(Color.white.opacity(0.08))
+                        ProgressView()
+                            .controlSize(.mini)
+                    }
+                    .frame(width: 28, height: 28)
                 } else if let onInjectPhoto {
                     Button {
                         onInjectPhoto()
@@ -658,7 +840,41 @@ struct FrameRowView: View {
                 .frame(width: 3)
                 .padding(.vertical, 7)
         }
+#if os(iOS)
+        .onAppear {
+            loadThumbnailIfNeeded()
+        }
+        .onChange(of: frame.photoIdentifier) {
+            loadThumbnailIfNeeded()
+        }
+#endif
     }
+
+#if os(iOS)
+    private func loadThumbnailIfNeeded() {
+        guard let identifier = frame.photoIdentifier, !identifier.isEmpty else {
+            loadedThumbnail = nil
+            return
+        }
+        let result = PHAsset.fetchAssets(withLocalIdentifiers: [identifier], options: nil)
+        guard let asset = result.firstObject else {
+            loadedThumbnail = nil
+            return
+        }
+        let options = PHImageRequestOptions()
+        options.deliveryMode = .highQualityFormat
+        options.resizeMode = .fast
+        options.isSynchronous = false
+        PHImageManager.default().requestImage(
+            for: asset,
+            targetSize: CGSize(width: 64, height: 64),
+            contentMode: .aspectFill,
+            options: options
+        ) { image, _ in
+            loadedThumbnail = image
+        }
+    }
+#endif
 }
 
 // MARK: - 新建胶卷
@@ -734,6 +950,8 @@ struct NewRollSheet: View {
             ? customCamera.trimmingCharacters(in: .whitespacesAndNewlines)
             : selectedCamera
         let newRoll = FilmRoll(
+            filmType: selectedFilm,
+            createdAt: Date(),
             name: selectedFilm,
             iso: selectedISO,
             cameraModel: camera,
@@ -823,15 +1041,6 @@ struct MechanicalActionButtonStyle: ButtonStyle {
                     .stroke(Color.white.opacity(configuration.isPressed ? 0.24 : 0.12), lineWidth: 1)
             )
             .scaleEffect(configuration.isPressed ? 0.985 : 1.0)
-    }
-}
-
-struct MechanicalFABStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .brightness(configuration.isPressed ? 0.12 : 0)
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .shadow(color: .black.opacity(0.35), radius: configuration.isPressed ? 2 : 6, y: 3)
     }
 }
 
