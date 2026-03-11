@@ -10,8 +10,11 @@ import SwiftData
 
 @Model
 final class FilmRoll {
+    var rollUUID: String = UUID().uuidString
     var name: String
     var iso: Int
+    var cameraModel: String = ""
+    var lensModel: String = ""
     var loadDate: Date
     var totalFrames: Int
     var isFinished: Bool
@@ -20,14 +23,20 @@ final class FilmRoll {
     var frames: [FilmFrame] = []
 
     init(
+        rollUUID: String = UUID().uuidString,
         name: String,
         iso: Int,
+        cameraModel: String = "",
+        lensModel: String = "",
         loadDate: Date = Date(),
         totalFrames: Int = 36,
         isFinished: Bool = false
     ) {
+        self.rollUUID = rollUUID
         self.name = name
         self.iso = iso
+        self.cameraModel = cameraModel
+        self.lensModel = lensModel
         self.loadDate = loadDate
         self.totalFrames = totalFrames
         self.isFinished = isFinished

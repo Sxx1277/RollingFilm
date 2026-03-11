@@ -30,12 +30,33 @@ struct RollingFilmApp: App {
     init() {
         // 2. 在初始化时就注入 Container，比 .onAppear 更早、更稳
         SessionDelegator.shared.modelContainer = sharedModelContainer
+        Self.backfillRollUUIDsIfNeeded(in: sharedModelContainer)
     }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .preferredColorScheme(.dark)
         }
         .modelContainer(sharedModelContainer)
+    }
+
+    /// 启动时回填历史数据：旧版本没有 rollUUID 时，自动补齐并保存。
+    private static func backfillRollUUIDsIfNeeded(in container: ModelContainer) {
+        let context = ModelContext(container)
+        let descriptor = FetchDescriptor<FilmRoll>()
+        guard let rolls = try? context.fetch(descriptor), !rolls.isEmpty else { return }
+
+        var didUpdate = false
+        for roll in rolls {
+            if roll.rollUUID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                roll.rollUUID = UUID().uuidString
+                didUpdate = true
+            }
+        }
+
+        if didUpdate {
+            try? context.save()
+        }
     }
 }

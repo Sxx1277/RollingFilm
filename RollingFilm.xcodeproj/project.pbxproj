@@ -560,6 +560,9 @@
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "用于记录拍摄时的地理位置信息。";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "用于将胶片拍摄参数写入照片EXIF并保存到相册。";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "用于选择相册照片并匹配底片记录后写入EXIF参数。";
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -604,6 +607,9 @@
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "用于记录拍摄时的地理位置信息。";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "用于将胶片拍摄参数写入照片EXIF并保存到相册。";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "用于选择相册照片并匹配底片记录后写入EXIF参数。";
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -742,6 +748,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "RollingFilm Watch";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "用于在记录底片时写入拍摄地点。";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.fool.RollingFilm;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -775,6 +782,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "RollingFilm Watch";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "用于在记录底片时写入拍摄地点。";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.fool.RollingFilm;
 				LD_RUNPATH_SEARCH_PATHS = (

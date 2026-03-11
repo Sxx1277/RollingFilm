@@ -24,20 +24,14 @@ struct WatchContentView: View {
     @State private var selectedMode: ParameterMode = .aperture
     @State private var crownApertureValue: Double = 4
     @State private var crownShutterValue: Double = 7
+    @State private var titlePulse = false
+    @State private var titleGlow = false
 
     private var apertureIndex: Int {
         max(0, min(WatchPresets.apertures.count - 1, Int(crownApertureValue.rounded())))
     }
     private var shutterIndex: Int {
         max(0, min(WatchPresets.shutters.count - 1, Int(crownShutterValue.rounded())))
-    }
-    private var activeCrownBinding: Binding<Double> {
-        selectedMode == .aperture ? $crownApertureValue : $crownShutterValue
-    }
-    private var activeCrownMax: Double {
-        selectedMode == .aperture
-            ? Double(WatchPresets.apertures.count - 1)
-            : Double(WatchPresets.shutters.count - 1)
     }
 
     /// 选中时大字号，未选中时小字号
@@ -46,15 +40,27 @@ struct WatchContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // 顶部：胶卷名，极小，靠左
+            // 顶部：胶卷名 + UUID 缩略，收到新卷时做绿色反馈
             HStack {
-                Text(session.currentRollName.isEmpty ? "未选胶卷" : session.currentRollName)
-                    .font(.system(size: 11, weight: .regular))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(session.currentRollName.isEmpty ? "未选胶卷" : session.currentRollName)
+                        .font(.system(size: 11, weight: .regular))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .foregroundStyle(.secondary)
+                    Text(session.currentRollId.isEmpty ? "UUID: -" : "UUID: \(shortRollID)")
+                        .font(.system(size: 9, weight: .regular))
+                        .lineLimit(1)
+                        .foregroundStyle(.tertiary)
+                }
                 Spacer(minLength: 0)
             }
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.green.opacity(titleGlow ? 0.25 : 0))
+            )
+            .scaleEffect(titlePulse ? 1.03 : 1.0)
             .padding(.horizontal, 4)
             .padding(.bottom, 6)
 
@@ -71,17 +77,6 @@ struct WatchContentView: View {
                     .frame(minWidth: selectedMode == .shutter ? 0 : 44)
             }
             .animation(.easeInOut(duration: 0.25), value: selectedMode)
-            // 使用单一可聚焦容器承载表冠，避免 Crown Sequencer 无 view 的告警
-            .focusable(true)
-            .digitalCrownRotation(
-                activeCrownBinding,
-                from: 0,
-                through: activeCrownMax,
-                by: 1,
-                sensitivity: .low,
-                isContinuous: false,
-                isHapticFeedbackEnabled: true
-            )
 
             Spacer(minLength: 8)
 
@@ -100,41 +95,110 @@ struct WatchContentView: View {
             )
             .disabled(session.currentRollId.isEmpty)
             .opacity(session.currentRollId.isEmpty ? 0.6 : 1)
+
+            if !session.isPhoneReachable {
+                Text("未连接")
+                    .font(.caption2)
+                    .foregroundStyle(.red)
+                    .padding(.top, 6)
+            }
         }
         .padding(.horizontal, 8)
         .navigationTitle("RollingFilm")
+        .onChange(of: session.rollUpdateToken) {
+            withAnimation(.easeOut(duration: 0.2)) {
+                titlePulse = true
+                titleGlow = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                withAnimation(.easeIn(duration: 0.25)) {
+                    titlePulse = false
+                    titleGlow = false
+                }
+            }
+        }
     }
 
     // MARK: - 左：光圈 f/X
+    @ViewBuilder
     private var apertureValueView: some View {
         let isSelected = selectedMode == .aperture
-        return Text("f/\(WatchPresets.apertures[apertureIndex])")
-            .font(isSelected ? fontSelected : fontUnselected)
-            .monospacedDigit()
-            .lineLimit(1)
-            .minimumScaleFactor(isSelected ? 0.35 : 0.5)
-            .multilineTextAlignment(isSelected ? .center : .leading)
-            .foregroundStyle(isSelected ? Color.orange : Color.primary.opacity(0.5))
-            .contentTransition(.numericText())
-            .onTapGesture {
-                withAnimation(.easeInOut(duration: 0.2)) { selectedMode = .aperture }
-            }
+        if isSelected {
+            Text("f/\(WatchPresets.apertures[apertureIndex])")
+                .font(fontSelected)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.35)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Color.orange)
+                .contentTransition(.numericText())
+                .focusable(true)
+                .digitalCrownRotation(
+                    $crownApertureValue,
+                    from: 0,
+                    through: Double(WatchPresets.apertures.count - 1),
+                    by: 1,
+                    sensitivity: .low,
+                    isContinuous: false,
+                    isHapticFeedbackEnabled: true
+                )
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.2)) { selectedMode = .aperture }
+                }
+        } else {
+            Text("f/\(WatchPresets.apertures[apertureIndex])")
+                .font(fontUnselected)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .multilineTextAlignment(.leading)
+                .foregroundStyle(Color.primary.opacity(0.5))
+                .contentTransition(.numericText())
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.2)) { selectedMode = .aperture }
+                }
+        }
     }
 
     // MARK: - 右：快门
+    @ViewBuilder
     private var shutterValueView: some View {
         let isSelected = selectedMode == .shutter
-        return Text(WatchPresets.shutters[shutterIndex])
-            .font(isSelected ? fontSelected : fontUnselected)
-            .monospacedDigit()
-            .lineLimit(1)
-            .minimumScaleFactor(isSelected ? 0.35 : 0.5)
-            .multilineTextAlignment(isSelected ? .center : .trailing)
-            .foregroundStyle(isSelected ? Color.orange : Color.primary.opacity(0.5))
-            .contentTransition(.numericText())
-            .onTapGesture {
-                withAnimation(.easeInOut(duration: 0.2)) { selectedMode = .shutter }
-            }
+        if isSelected {
+            Text(WatchPresets.shutters[shutterIndex])
+                .font(fontSelected)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.35)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Color.orange)
+                .contentTransition(.numericText())
+                .focusable(true)
+                .digitalCrownRotation(
+                    $crownShutterValue,
+                    from: 0,
+                    through: Double(WatchPresets.shutters.count - 1),
+                    by: 1,
+                    sensitivity: .low,
+                    isContinuous: false,
+                    isHapticFeedbackEnabled: true
+                )
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.2)) { selectedMode = .shutter }
+                }
+        } else {
+            Text(WatchPresets.shutters[shutterIndex])
+                .font(fontUnselected)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .multilineTextAlignment(.trailing)
+                .foregroundStyle(Color.primary.opacity(0.5))
+                .contentTransition(.numericText())
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.2)) { selectedMode = .shutter }
+                }
+        }
     }
 
     private func logFrame() {
@@ -143,6 +207,12 @@ struct WatchContentView: View {
             aperture: WatchPresets.apertures[apertureIndex],
             shutter: WatchPresets.shutters[shutterIndex]
         )
+    }
+
+    private var shortRollID: String {
+        let id = session.currentRollId
+        guard !id.isEmpty else { return "-" }
+        return String(id.prefix(8))
     }
 }
 
