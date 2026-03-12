@@ -92,10 +92,10 @@ struct ContentView: View {
                             Image(systemName: "camera.macro")
                                 .font(.system(size: 30, weight: .light))
                                 .foregroundStyle(RFTheme.accent)
-                            Text("装入你的第一卷胶片")
+                            Text(I18N.t("装入你的第一卷胶片", "Load your first roll"))
                                 .font(.headline)
                                 .foregroundStyle(RFTheme.primaryText)
-                            Text("点击右上角 + 创建一卷，开始记录每一张底片。")
+                            Text(I18N.t("点击右上角 + 创建一卷，开始记录每一张底片。", "Tap + to create a roll and start logging frames."))
                                 .font(.subheadline)
                                 .foregroundStyle(RFTheme.secondaryText)
                                 .multilineTextAlignment(.center)
@@ -105,7 +105,7 @@ struct ContentView: View {
                         .listRowBackground(Color.clear)
                     }
                 } else {
-                    Section("Active Rolls") {
+                    Section(I18N.t("相机里", "Active Rolls")) {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
                                 ForEach(activeRolls) { roll in
@@ -127,9 +127,9 @@ struct ContentView: View {
                         .listRowBackground(Color.clear)
                     }
 
-                    Section("Ready to Match") {
+                    Section(I18N.t("灯箱上", "Ready to Match")) {
                         if pendingRolls.isEmpty {
-                            Text("所有已拍完胶卷都已完成匹配。")
+                            Text(I18N.t("所有已拍完胶卷都已完成匹配。", "All finished rolls are fully matched."))
                                 .font(.subheadline)
                                 .foregroundStyle(RFTheme.secondaryText)
                                 .listRowBackground(Color.clear)
@@ -148,7 +148,7 @@ struct ContentView: View {
                         }
                     }
 
-                    Section("Film Library") {
+                    Section(I18N.t("底片册里", "Film Library")) {
                         ForEach(sortedGroupedRolls) { group in
                             NavigationLink {
                                 FilmTypeArchiveView(filmType: group.filmType)
@@ -162,14 +162,14 @@ struct ContentView: View {
                                 Button(role: .destructive) {
                                     delete(rolls: group.rolls)
                                 } label: {
-                                    Label("删除", systemImage: "trash")
+                                    Label(I18N.t("删除", "Delete"), systemImage: "trash")
                                 }
                             }
                             .swipeActions(edge: .leading) {
                                 Button {
                                     archive(rolls: group.rolls)
                                 } label: {
-                                    Label("归档", systemImage: "archivebox")
+                                    Label(I18N.t("归档", "Archive"), systemImage: "archivebox")
                                 }
                                 .tint(.indigo)
                             }
@@ -183,7 +183,7 @@ struct ContentView: View {
             .scrollContentBackground(.hidden)
             .background(Color.black.ignoresSafeArea())
 #endif
-            .navigationTitle("RollingFilm")
+            .navigationTitle(I18N.t("胶卷", "RollingFilm"))
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
@@ -268,7 +268,7 @@ struct ActiveRollCard: View {
             Button {
                 onSync()
             } label: {
-                Label("Connect", systemImage: "applewatch")
+                Label(I18N.t("同步到手表", "Sync to Watch"), systemImage: "applewatch")
                     .font(.caption.weight(.semibold))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
@@ -276,7 +276,7 @@ struct ActiveRollCard: View {
             .buttonStyle(.bordered)
             .tint(.green)
             if roll.isFinished {
-                Text("已拍完")
+                Text(I18N.t("已拍完", "Finished"))
                     .font(.caption)
                     .foregroundStyle(RFTheme.accent)
             }
@@ -317,7 +317,7 @@ struct PendingRollRow: View {
                 Text(roll.loadDate, format: .dateTime.year().month(.twoDigits).day(.twoDigits))
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(RFTheme.secondaryText)
-                Text("待匹配 \(missingCount) 张")
+                Text(I18N.t("待匹配 \(missingCount) 张", "Pending \(missingCount)"))
                     .font(.caption)
                     .foregroundStyle(RFTheme.accent)
             }
@@ -630,8 +630,10 @@ struct RollDetailView: View {
         .scrollContentBackground(.hidden)
         .background(RFTheme.pageBackground.ignoresSafeArea())
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                syncToolbarButton
+            if !roll.isFinished {
+                ToolbarItem(placement: .primaryAction) {
+                    syncToolbarButton
+                }
             }
         }
 #endif
@@ -651,15 +653,17 @@ struct RollDetailView: View {
 
     private var bottomBar: some View {
         HStack(spacing: 12) {
-            Button {
-                showingLogFrame = true
-            } label: {
-                Text("记录当前 (Log Frame)")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
+            if !roll.isFinished {
+                Button {
+                    showingLogFrame = true
+                } label: {
+                    Text("记录当前 (Log Frame)")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                }
+                .buttonStyle(MechanicalActionButtonStyle(fill: RFTheme.cardBackground, foreground: RFTheme.primaryText))
             }
-            .buttonStyle(MechanicalActionButtonStyle(fill: RFTheme.cardBackground, foreground: RFTheme.primaryText))
         }
         .padding(.horizontal)
         .padding(.bottom, 8)

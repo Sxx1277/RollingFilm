@@ -202,7 +202,6 @@ struct WatchContentView: View {
     }
 
     private func logFrame() {
-        WKInterfaceDevice.current().play(.success)
         session.sendLogFrame(
             aperture: WatchPresets.apertures[apertureIndex],
             shutter: WatchPresets.shutters[shutterIndex]

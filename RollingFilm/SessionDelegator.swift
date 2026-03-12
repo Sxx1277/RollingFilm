@@ -19,6 +19,8 @@ final class SessionDelegator: NSObject, ObservableObject {
     @Published var isSyncing: Bool = false
     @Published var lastSyncedRollUUID: String?
     @Published var syncSuccessToken: Int = 0
+    private var processedMessageIDs: [String] = []
+    private let dedupeQueue = DispatchQueue(label: "com.rollingfilm.session.dedupe")
 
     private override init() {
         super.init()
@@ -34,7 +36,7 @@ final class SessionDelegator: NSObject, ObservableObject {
     /// 将当前选中的胶卷名和 UUID 发送给 Watch，Watch 用于更新顶部标题与记录归属
     func sendCurrentRoll(roll: FilmRoll) {
         let session = WCSession.default
-        guard session.isPaired else { return }
+        guard session.isPaired, !roll.isFinished else { return }
         if roll.rollUUID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             roll.rollUUID = UUID().uuidString
         }
@@ -120,14 +122,45 @@ final class SessionDelegator: NSObject, ObservableObject {
     // MARK: - 接收 Watch 发来的记录并写入 SwiftData
 
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
-        Task { @MainActor in
-            handleReceivedLogFrame(userInfo)
-        }
+        // 后台传输场景：使用后台队列写入，减少对前台主线程活跃状态的依赖
+        handleReceivedLogFrameInBackground(userInfo)
     }
 
     /// 收到 Watch 的 logFrame 数据后：优先按 UUID 精确匹配 FilmRoll，创建 FilmFrame 并保存
     private func handleReceivedLogFrame(_ payload: [String: Any]) {
+        guard shouldProcess(payload: payload) else { return }
         guard let container = modelContainer else { return }
+        persistLogFrame(payload: payload, container: container)
+    }
+
+    private func shouldProcess(payload: [String: Any]) -> Bool {
+        guard payload[IOSMessageKey.action] as? String == IOSMessageAction.logFrame.rawValue else {
+            return false
+        }
+        guard let messageId = payload[IOSMessageKey.messageId] as? String, !messageId.isEmpty else {
+            return true
+        }
+        return dedupeQueue.sync {
+            if processedMessageIDs.contains(messageId) {
+                return false
+            }
+            processedMessageIDs.append(messageId)
+            if processedMessageIDs.count > 300 {
+                processedMessageIDs.removeFirst(processedMessageIDs.count - 200)
+            }
+            return true
+        }
+    }
+
+    private func handleReceivedLogFrameInBackground(_ payload: [String: Any]) {
+        guard shouldProcess(payload: payload) else { return }
+        guard let container = modelContainer else { return }
+        DispatchQueue.global(qos: .utility).async {
+            self.persistLogFrame(payload: payload, container: container)
+        }
+    }
+
+    private func persistLogFrame(payload: [String: Any], container: ModelContainer) {
         guard let aperture = payload[IOSMessageKey.aperture] as? String,
               let shutter = payload[IOSMessageKey.shutter] as? String else { return }
 
@@ -143,7 +176,6 @@ final class SessionDelegator: NSObject, ObservableObject {
         let context = ModelContext(container)
         context.autosaveEnabled = true
 
-        // 1) 优先使用 rollUUID 精确匹配，避免同名胶卷冲突
         var roll: FilmRoll?
         if let rollUUID = payload[IOSMessageKey.rollId] as? String, !rollUUID.isEmpty {
             let descriptor = FetchDescriptor<FilmRoll>(
@@ -151,8 +183,6 @@ final class SessionDelegator: NSObject, ObservableObject {
             )
             roll = try? context.fetch(descriptor).first
         }
-
-        // 2) 兼容兜底：若 UUID 不可用，再按名称取最近的一卷
         if roll == nil, let rollName = payload[IOSMessageKey.rollName] as? String, !rollName.isEmpty {
             let descriptor = FetchDescriptor<FilmRoll>(
                 predicate: #Predicate<FilmRoll> { $0.name == rollName },
@@ -160,7 +190,6 @@ final class SessionDelegator: NSObject, ObservableObject {
             )
             roll = try? context.fetch(descriptor).first
         }
-
         guard let targetRoll = roll else { return }
 
         let frame = FilmFrame(
@@ -218,6 +247,7 @@ extension SessionDelegator: WCSessionDelegate {
 
 enum IOSMessageKey {
     static let action = "action"
+    static let messageId = "messageId"
     static let rollId = "rollId"
     static let rollName = "rollName"
     static let aperture = "aperture"

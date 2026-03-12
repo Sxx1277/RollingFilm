@@ -7,6 +7,7 @@ import Foundation
 import Combine
 import WatchConnectivity
 import CoreLocation
+import WatchKit
 
 /// Watch 端 WCSession 代理：接收 iPhone 下发的当前胶卷，发送「记录底片」请求。
 final class WatchSessionDelegator: NSObject, ObservableObject {
@@ -56,13 +57,15 @@ final class WatchSessionDelegator: NSObject, ObservableObject {
         }
     }
 
-    /// 用户点击「记录」时调用：transferUserInfo / sendMessage 发送光圈、快门、时间戳、所属胶卷名（及 rollId）
+    /// 用户点击「记录」时调用：仅使用 transferUserInfo 进入系统后台传输队列
     func sendLogFrame(aperture: String, shutter: String) {
         let session = WCSession.default
         guard session.activationState == .activated else { return }
         refreshLocation()
+        let messageId = UUID().uuidString
         let payload: [String: Any] = [
             MessageKey.action: MessageAction.logFrame.rawValue,
+            MessageKey.messageId: messageId,
             MessageKey.rollId: currentRollId,
             MessageKey.rollName: currentRollName,
             MessageKey.aperture: aperture,
@@ -71,13 +74,14 @@ final class WatchSessionDelegator: NSObject, ObservableObject {
             MessageKey.latitude: latestLatitude as Any,
             MessageKey.longitude: latestLongitude as Any,
         ]
-        guard session.isReachable else {
-            session.transferUserInfo(payload)
-            return
+        // 1) 永远入系统后台队列，保证息屏/后台可送达
+        _ = session.transferUserInfo(payload)
+        // 2) 前台可达时补发即时消息，提升“点击记录后立刻看到结果”的体验
+        if session.isReachable {
+            session.sendMessage(payload, replyHandler: nil, errorHandler: nil)
         }
-        session.sendMessage(payload, replyHandler: nil, errorHandler: { [payload] _ in
-            session.transferUserInfo(payload)
-        })
+        // 入队后立即给一个轻触感反馈，提示“已加入后台传输队列”
+        WKInterfaceDevice.current().play(.click)
     }
 }
 
@@ -176,6 +180,7 @@ extension WatchSessionDelegator: CLLocationManagerDelegate {
 // MARK: - 与 iPhone 约定的键
 enum MessageKey {
     static let action = "action"
+    static let messageId = "messageId"
     static let rollId = "rollId"
     static let rollName = "rollName"
     static let aperture = "aperture"
